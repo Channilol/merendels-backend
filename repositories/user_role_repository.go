@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"merendels-backend/config"
-	"merendels-backend/models"
+	"merendels-backend/config" // ← OK
+	"merendels-backend/models" // ← OK
 )
 
 type UserRoleRepository struct {}

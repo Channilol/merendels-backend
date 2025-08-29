@@ -17,7 +17,7 @@ func ConnectDatabase() {
 	host := "localhost"
 	port := 5432
 	user := "postgres"
-	password := "Dev@Sellogic2024"
+	password := "1234"
 	dbname := "merendels_db"
 
 	// Stringa di connessione PostgreSQL
