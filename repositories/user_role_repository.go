@@ -106,10 +106,10 @@ func (r *UserRoleRepository) GetByHierarchyLevel(level int) (*models.UserRole, e
 	if err != nil {
 		// Caso nessun record trovato, torna nil
 		if err == sql.ErrNoRows {
-			return nil, err
+			return nil, nil
 		}
 		// Caso errore reale, ritorna nil e l'errore
-		return nil,nil
+		return nil,err
 	}
 
 	return &userRole, nil
@@ -139,5 +139,19 @@ func (r *UserRoleRepository) Update(userRole *models.UserRole) (bool, error) {
 	// Log di record aggiornato con successo
 	log.Printf("record con id %d aggiornato", userRole.ID)
 	
+	return true, nil
+}
+
+// Elimina user_role dal database
+func (r *UserRoleRepository) Delete(id int) (bool, error) {
+	query := `DELETE FROM user_roles WHERE id = $1`
+	 _, err := config.DB.Exec(query, id) 
+
+	 if err != nil {
+		return false, err
+	 }
+
+	 // Log di record aggiornato con successo
+	log.Printf("record con id %d eliminato", id)
 	return true, nil
 }
