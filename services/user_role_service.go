@@ -110,7 +110,7 @@ func (s *UserRoleService) UpdateUserRole(id int, request *models.CreateUserRoleR
 	// Business logic: verifica se esiste
 	existingRole, err := s.repository.GetByID(id)
 	if err != nil {
-		return nil, fmt.Errorf("user role with id:%w does not exist", id)
+		return nil, fmt.Errorf("error checking existing role: %w", err)
 	}
 
 	if existingRole == nil {
@@ -153,7 +153,7 @@ func (s *UserRoleService) DeleteUserRole(id int) (bool, error) {
 
 	existingRole, err := s.repository.GetByID(id)
 	if err != nil {
-		return false, fmt.Errorf("user role with id: %w does not exist", id)
+		return false, fmt.Errorf("error checking existing role: %w", err)
 	}
 
 	if existingRole == nil {
