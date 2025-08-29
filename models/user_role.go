@@ -1,6 +1,6 @@
 package models
 
-type UseRole struct {
+type UserRole struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	HierarchyLevel int    `json:"hierarchy_level"`
