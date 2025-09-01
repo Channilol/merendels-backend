@@ -1,106 +1,141 @@
 package main
 
 import (
-	"bytes"
+	"fmt"
 	"log"
-	"merendels-backend/middleware"
-	"merendels-backend/utils"
-	"net/http"
-	"net/http/httptest"
-
-	"github.com/gin-gonic/gin"
+	"merendels-backend/config"
+	"merendels-backend/models"
+	"merendels-backend/services"
+	"time"
 )
 
 func main() {
-	log.Println("🧪 Test Auth Middleware")
+	log.Println("🧪 Test Auth Service")
 
-	// Setup Gin in test mode
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
+	// Connessione database
+	config.ConnectDatabase()
+	defer config.DB.Close()
 
-	// Endpoint protetto con solo AuthMiddleware
-	router.GET("/protected", middleware.AuthMiddleware(), func(c *gin.Context) {
-		userID, _ := middleware.GetUserIDFromContext(c)
-		email, _ := middleware.GetUserEmailFromContext(c)
-		
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Access granted",
-			"user_id": userID,
-			"email":   email,
-		})
-	})
+	// Crea service
+	authService := services.NewAuthService()
 
-	// Endpoint protetto con hierarchy level (solo manager level 2+)
-	router.POST("/admin-only", 
-		middleware.AuthMiddleware(), 
-		middleware.RequireHierarchyLevel(2), 
-		func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "Admin access granted",
-			})
-		})
-
-	// Test 1: Richiesta senza token (dovrebbe fallire)
-	log.Println("\n❌ Test 1: No Token")
-	req1, _ := http.NewRequest("GET", "/protected", nil)
-	resp1 := httptest.NewRecorder()
-	router.ServeHTTP(resp1, req1)
-	log.Printf("Status: %d", resp1.Code)
-	log.Printf("Body: %s", resp1.Body.String())
-
-	// Test 2: Token valido (dovrebbe funzionare)
-	log.Println("\n✅ Test 2: Valid Token")
+	// Test 1: Registrazione nuovo utente
+	log.Println("\n👤 Test 1: Register New User")
 	
-	// Genera token per utente di test
-	userID := 5
-	email := "mario@test.com"
-	roleID := 2
-	hierarchyLevel := 3
-	token, err := utils.GenerateToken(userID, email, &roleID, &hierarchyLevel)
+	// Usa timestamp per email univoca
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	testEmail := fmt.Sprintf("test-user-%s@example.com", timestamp)
+	
+	// Crea richiesta registrazione
+	authRequest := &models.CreateAuthCredentialRequest{
+		UserID:   0, // Sarà ignorato, viene auto-generato
+		Password: "password123",
+	}
+
+	userRequest := &models.CreateUserRequest{
+		Name:      "Luigi Verdi",
+		Email:     testEmail,
+		RoleID:    nil, // Nessun ruolo per ora
+		ManagerID: nil, // Nessun manager per ora
+	}
+
+	registerResponse, err := authService.Register(authRequest, userRequest)
 	if err != nil {
-		log.Printf("❌ Errore generazione token: %v", err)
+		log.Printf("❌ Errore registrazione: %v", err)
 		return
 	}
 
-	req2, _ := http.NewRequest("GET", "/protected", nil)
-	req2.Header.Set("Authorization", "Bearer "+token)
-	resp2 := httptest.NewRecorder()
-	router.ServeHTTP(resp2, req2)
-	log.Printf("Status: %d", resp2.Code)
-	log.Printf("Body: %s", resp2.Body.String())
+	log.Printf("✅ Utente registrato con successo!")
+	log.Printf("   Token: %s", registerResponse.Token[:50]+"...")
+	log.Printf("   User ID: %d", registerResponse.User.ID)
+	log.Printf("   Name: %s", registerResponse.User.Name)
+	log.Printf("   Email: %s", registerResponse.User.Email)
 
-	// Test 3: Hierarchy level sufficiente (level 3 >= 2)
-	log.Println("\n✅ Test 3: Sufficient Hierarchy Level")
-	req3, _ := http.NewRequest("POST", "/admin-only", bytes.NewBuffer([]byte("{}")))
-	req3.Header.Set("Authorization", "Bearer "+token)
-	req3.Header.Set("Content-Type", "application/json")
-	resp3 := httptest.NewRecorder()
-	router.ServeHTTP(resp3, req3)
-	log.Printf("Status: %d", resp3.Code)
-	log.Printf("Body: %s", resp3.Body.String())
-
-	// Test 4: Hierarchy level insufficiente
-	log.Println("\n❌ Test 4: Insufficient Hierarchy Level")
+	// Test 2: Login con credenziali corrette
+	log.Println("\n🔐 Test 2: Login Success")
 	
-	// Genera token per utente con level basso
-	lowLevelToken, _ := utils.GenerateToken(6, "junior@test.com", &roleID, new(int)) // level 0
+	loginRequest := &models.LoginRequest{
+		Email:    testEmail,  // ← Usa la stessa email del test 1
+		Password: "password123",
+	}
+
+	loginResponse, err := authService.Login(loginRequest)
+	if err != nil {
+		log.Printf("❌ Errore login: %v", err)
+		return
+	}
+
+	log.Printf("✅ Login effettuato con successo!")
+	log.Printf("   Token: %s", loginResponse.Token[:50]+"...")
+	log.Printf("   User ID: %d", loginResponse.User.ID)
+
+	// Test 3: Login con password sbagliata
+	log.Println("\n❌ Test 3: Login Wrong Password")
 	
-	req4, _ := http.NewRequest("POST", "/admin-only", bytes.NewBuffer([]byte("{}")))
-	req4.Header.Set("Authorization", "Bearer "+lowLevelToken)
-	req4.Header.Set("Content-Type", "application/json")
-	resp4 := httptest.NewRecorder()
-	router.ServeHTTP(resp4, req4)
-	log.Printf("Status: %d", resp4.Code)
-	log.Printf("Body: %s", resp4.Body.String())
+	wrongRequest := &models.LoginRequest{
+		Email:    testEmail,  // ← Usa la stessa email del test 1
+		Password: "password-sbagliata",
+	}
 
-	// Test 5: Token malformato
-	log.Println("\n❌ Test 5: Invalid Token")
-	req5, _ := http.NewRequest("GET", "/protected", nil)
-	req5.Header.Set("Authorization", "Bearer token-fasullo")
-	resp5 := httptest.NewRecorder()
-	router.ServeHTTP(resp5, req5)
-	log.Printf("Status: %d", resp5.Code)
-	log.Printf("Body: %s", resp5.Body.String())
+	_, err = authService.Login(wrongRequest)
+	if err != nil {
+		log.Printf("✅ Login fallito correttamente: %v", err)
+	} else {
+		log.Printf("❌ Login doveva fallire!")
+	}
 
-	log.Println("\n🎉 Tutti i test middleware completati!")
+	// Test 4: Login con email inesistente
+	log.Println("\n❌ Test 4: Login Non-existent Email")
+	
+	nonExistentRequest := &models.LoginRequest{
+		Email:    "nonexistent@test.com",
+		Password: "password123",
+	}
+
+	_, err = authService.Login(nonExistentRequest)
+	if err != nil {
+		log.Printf("✅ Login fallito correttamente: %v", err)
+	} else {
+		log.Printf("❌ Login doveva fallire!")
+	}
+
+	// Test 5: Registrazione email duplicata
+	log.Println("\n❌ Test 5: Duplicate Email Registration")
+	
+	duplicateUserRequest := &models.CreateUserRequest{
+		Name:  "Mario Clone",
+		Email: testEmail, // ← Stessa email per testare duplicato
+	}
+
+	_, err = authService.Register(authRequest, duplicateUserRequest)
+	if err != nil {
+		log.Printf("✅ Registrazione fallita correttamente: %v", err)
+	} else {
+		log.Printf("❌ Registrazione doveva fallire!")
+	}
+
+	// Test 6: Change Password
+	log.Println("\n🔑 Test 6: Change Password")
+	
+	err = authService.ChangePassword(registerResponse.User.ID, "password123", "nuova-password")
+	if err != nil {
+		log.Printf("❌ Errore cambio password: %v", err)
+	} else {
+		log.Printf("✅ Password cambiata con successo!")
+		
+		// Test login con nuova password
+		newLoginRequest := &models.LoginRequest{
+			Email:    testEmail,  // ← Usa la stessa email
+			Password: "nuova-password",
+		}
+		
+		_, err = authService.Login(newLoginRequest)
+		if err != nil {
+			log.Printf("❌ Login con nuova password fallito: %v", err)
+		} else {
+			log.Printf("✅ Login con nuova password riuscito!")
+		}
+	}
+
+	log.Println("\n🎉 Tutti i test auth completati!")
 }
