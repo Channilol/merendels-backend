@@ -51,7 +51,7 @@ func (s *AuthService) Login(request *models.LoginRequest) (*models.LoginResponse
 	}
 	
 	// Check numero di tentativi falliti negli ultimi x minuti
-	failedAttempts, _ := s.authRepository.GetRecentFailedAttempts(loginData.UserID, 15)
+	failedAttempts, _ := s.authRepository.GetRecentFailedAttempts(loginData.UserID, 1)
 	if failedAttempts >= 5 {
 		s.authRepository.RecordLoginAttempt(loginData.UserID, models.LoginFailure)
 		return nil, errors.New("too many failed attempts, please try again later")
