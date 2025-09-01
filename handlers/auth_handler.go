@@ -191,3 +191,48 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		"message": "Password changed successfully",
 	})
 }
+
+// GetProfile gestisce GET /api/auth/profile (Protetto da JWT)
+func (h *AuthHandler) GetProfile(c*gin.Context) {
+	// Estrae i dati dal JWT Token
+	claims, exists := middleware.GetUserClaimsFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+		})
+		return
+	}
+
+	// Costruisce il profilo utente
+	profile := gin.H{
+		"user_id":         claims.UserID,
+		"email":           claims.Email,
+		"role_id":         claims.RoleID,
+		"hierarchy_level": claims.HierarchyLevel,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Profile retrieved successfully",
+		"data": profile,
+	})
+}
+
+// Logout gestiste POST /api/auth/logout (Protetto da JWT)
+func (h *AuthHandler) Logout(c *gin.Context) {
+	//TODO: Da fare, eliminando il token.
+}
+
+// ValidateToken gestisce POST /api/auth/validate (per verificare se un token é valido)
+func (h *AuthHandler) ValidateToken(c *gin.Context) {
+	// Se arriviamo qui, il middleware ha giá validato il token
+	userID, _ := middleware.GetUserIDFromContext(c)
+	email, _ := middleware.GetUserEmailFromContext(c)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Token is valid",
+		"data": gin.H{
+			"user_id": userID,
+			"email": email,
+		},
+	})
+}
