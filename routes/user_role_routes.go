@@ -19,17 +19,17 @@ func SetupUserRoleRoutes(router *gin.RouterGroup) {
 		userRoles.GET("", handler.GetAllUserRoles)      // GET /api/user-roles
 		userRoles.GET("/:id", handler.GetUserRoleByID)  // GET /api/user-roles/:id
 		
-		// OPERAZIONI DI SCRITTURA - Solo hierarchy_level >= 2 (Manager+)
+		// OPERAZIONI DI SCRITTURA - Solo hierarchy_level <= 1 (Responsabile/Capo)
 		userRoles.POST("", 
-			middleware.RequireHierarchyLevel(2), 
+			middleware.RequireHierarchyLevel(1), 
 			handler.CreateUserRole)  // POST /api/user-roles
 			
 		userRoles.PUT("/:id", 
-			middleware.RequireHierarchyLevel(2), 
+			middleware.RequireHierarchyLevel(1), 
 			handler.UpdateUserRole)  // PUT /api/user-roles/:id
 			
 		userRoles.DELETE("/:id", 
-			middleware.RequireHierarchyLevel(2), 
+			middleware.RequireHierarchyLevel(1), 
 			handler.DeleteUserRole)  // DELETE /api/user-roles/:id
 
 	}
