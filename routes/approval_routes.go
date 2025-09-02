@@ -18,8 +18,24 @@ func SetupApprovalRoutes(router *gin.RouterGroup) {
 		// OPERAZIONI DI LETTURA - Accessibili a tutti gli utenti autenticati
 		// Gli utenti possono vedere lo stato delle approvazioni delle proprie richieste
 		
-		approvals.GET("/:id", handler.GetApprovalByID)              // GET /api/approvals/:id - Singola approvazione per ID
+		// Rotte specifiche PRIMA dei parametri dinamici
 		approvals.GET("/me", handler.GetMyApprovals)                // GET /api/approvals/me - Le mie approvazioni (come approver)
+		
+		// OPERAZIONI AMMINISTRATIVE AVANZATE - Solo hierarchy_level <= 1
+		approvals.GET("/statistics", 
+			middleware.RequireHierarchyLevel(1), 
+			handler.GetApprovalStatistics)                          // GET /api/approvals/statistics - Statistiche approvazioni
+			
+		approvals.GET("/status/:status", 
+			middleware.RequireHierarchyLevel(1), 
+			handler.GetApprovalsByStatus)                           // GET /api/approvals/status/:status - Approvazioni per status
+		
+		approvals.GET("", 
+			middleware.RequireHierarchyLevel(1), 
+			handler.GetAllApprovals)                                // GET /api/approvals - Tutte le approvazioni (admin/manager)
+		
+		// ROTTE CON PARAMETRI DINAMICI - Alla fine per evitare conflitti
+		approvals.GET("/:id", handler.GetApprovalByID)              // GET /api/approvals/:id - Singola approvazione per ID
 		
 		// OPERAZIONI DI APPROVAZIONE - Solo hierarchy_level <= 1 (Responsabile/Capo)
 		// Solo manager e responsabili possono creare, modificare ed eliminare approvazioni
@@ -39,31 +55,5 @@ func SetupApprovalRoutes(router *gin.RouterGroup) {
 		approvals.DELETE("/:id", 
 			middleware.RequireHierarchyLevel(1), 
 			handler.DeleteApproval)                                 // DELETE /api/approvals/:id - Elimina approvazione
-		
-		// OPERAZIONI AMMINISTRATIVE AVANZATE - Solo hierarchy_level <= 1
-		
-		approvals.GET("", 
-			middleware.RequireHierarchyLevel(1), 
-			handler.GetAllApprovals)                                // GET /api/approvals - Tutte le approvazioni (admin/manager)
-			
-		approvals.GET("/status/:status", 
-			middleware.RequireHierarchyLevel(1), 
-			handler.GetApprovalsByStatus)                           // GET /api/approvals/status/:status - Approvazioni per status
-			
-		approvals.GET("/statistics", 
-			middleware.RequireHierarchyLevel(1), 
-			handler.GetApprovalStatistics)                          // GET /api/approvals/statistics - Statistiche approvazioni
-	}
-
-	// Rotte specifiche per richieste con approvazioni - integrate con le requests
-	// Queste rotte sono accessibili a tutti gli utenti autenticati per consultazione
-	requests := router.Group("/requests")
-	requests.Use(middleware.AuthMiddleware())
-	{
-		requests.GET("/:request_id/approvals", 
-			handler.GetApprovalsByRequestID)                        // GET /api/requests/:request_id/approvals - Approvazioni per richiesta
-			
-		requests.GET("/:request_id/approval-status", 
-			handler.GetRequestApprovalStatus)                       // GET /api/requests/:request_id/approval-status - Status approvazione richiesta
 	}
 }
