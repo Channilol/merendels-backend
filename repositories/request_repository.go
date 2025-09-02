@@ -203,3 +203,131 @@ func (r *RequestRepository) GetByUserAndDateRange(userID int, startDate, endDate
 	}
 	return requests, nil
 }
+
+// CheckOverlapForUser verifica se ci sono sovrapposizioni per un utente in un periodo
+func (r *RequestRepository) CheckOverlapForUser(userID int, startDate, endDate time.Time, excludeID int) (bool, error) {
+	query := `
+		SELECT COUNT(*) 
+		FROM requests 
+		WHERE user_id = $1 
+		AND id != $4
+		AND (start_date <= $3 AND end_date >= $2)`
+	var count int
+	err := config.DB.QueryRow(query, userID, startDate, endDate, excludeID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil;
+}
+
+// GetPendingRequests recupera richieste che non hanno ancora approvazioni
+func (r *RequestRepository) GetPendingRequests() ([]models.Request, error) {
+	query := `SELECT r.id, r.user_id, r.start_date, r.end_date, r.request_type, r.notes, r.created_at FROM requests r LEFT JOIN approvals a ON r.id = a.request_id WHERE a.id IS NULL ORDER BY r.created_at ASC`
+
+	rows,err := config.DB.Query(query)
+	if err != nil {
+		return nil,err
+	}
+	defer rows.Close()
+
+	var requests []models.Request
+
+		for rows.Next() {
+		var req models.Request
+		err := rows.Scan(
+			&req.ID,
+			&req.UserID,
+			&req.StartDate,
+			&req.EndDate,
+			&req.RequestType,
+			&req.Notes,
+			&req.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		requests = append(requests, req)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return requests, nil
+}
+
+// Update aggiorna una richiesta esistente
+func (r *RequestRepository) Update(request *models.Request) (bool, error) {
+	query := `UPDATE requests SET start_date = $1, end_date = $2, request_type = $3, notes = $4 WHERE id = $5`
+
+	result, err := config.DB.Exec(query, request.StartDate, request.EndDate, request.RequestType, request.Notes, request.ID)
+	if err != nil {
+		return false, err
+	}
+	
+	 rowsAffected, err := result.RowsAffected()
+	 if err != nil {
+		return false, fmt.Errorf("errore nel controllare le righe aggiornate: %w", err)
+	 }
+
+	 if rowsAffected == 0 {
+		return false, fmt.Errorf("nessuna richiesta aggiornata con ID %d", request.ID)
+	 }
+
+	 log.Printf("Richiesta con ID %d aggiornata", request.ID)
+	 return true, nil
+}
+
+// Delete elimina una richiesta dal database
+func (r *RequestRepository) Delete(id int) (bool, error) {
+	// Prima elimino le approcazioni associate
+	deleteApprovalsQuery := `DELETE FROM approvals WHERE request_id = $1`
+	_, err := config.DB.Exec(deleteApprovalsQuery, id)
+	if err != nil {
+		return false, fmt.Errorf("errore nell'eliminazione delle approvazioni associate: %w", err)
+	}
+
+	// Poi elimino le richieste
+	deleteRequestQuery := `DELETE FROM requests WHERE id = $1`
+	result, err := config.DB.Exec(deleteRequestQuery, id)
+	if err != nil {
+		return false, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("errore nel controllare le righe eliminate: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return false, fmt.Errorf("nessuna richiesta eliminata con ID %d", id)
+	 }
+
+	 log.Printf("Richiesta con ID %d eliminata (incluse approvazioni associate)", id)
+	return true, nil
+}
+
+// CountByUserID conta il numero totale di richieste per un utente
+func (r *RequestRepository) CountByUserID(userID int) (int, error) {
+	query := `SELECT COUNT(*) FROM requests WHERE user_id = $1`
+
+	var count int
+	err := config.DB.QueryRow(query, userID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// CountTotal conta il numero totale di richieste nel sistema
+func (r *RequestRepository) CountTotal() (int, error) {
+	query := `SELECT COUNT(*) FROM requests`
+
+	var count int
+	err := config.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
