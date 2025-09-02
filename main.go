@@ -42,9 +42,11 @@ func main() {
 	// Setup API Routes group
 	api := router.Group("/api")
 	{
-		routes.SetupAuthRoutes(api) // Rotte autenticazione: /api/auth/*
-		routes.SetupUserRoleRoutes(api) //Rotte user roles: /api/user-roles/*
-		routes.SetupTimbratureRoutes(api) // Rotte timbrature: /api/timbrature/*
+		routes.SetupAuthRoutes(api)        // Rotte autenticazione: /api/auth/*
+		routes.SetupUserRoleRoutes(api)    // Rotte user roles: /api/user-roles/*
+		routes.SetupTimbratureRoutes(api)  // Rotte timbrature: /api/timbrature/*
+		routes.SetupRequestRoutes(api)     // Rotte richieste ferie/permessi: /api/requests/*
+		routes.SetupApprovalRoutes(api)    // Rotte approvazioni: /api/approvals/*
 	}
 
 	// Avvio server
