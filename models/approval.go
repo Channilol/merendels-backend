@@ -23,7 +23,7 @@ type Approval struct {
 // NO ID & ApprovedAt => generated from the database by default
 type CreateApprovalRequest struct {
 	RequestID  int            `json:"request_id" binding:"required"`
-	ApproverID int            `json:"approver_id" binding:"required"`
+	ApproverID int            `json:"approver_id"`
 	Status     ApprovalStatus `json:"status" binding:"required"`
 	Comments   *string         `json:"comments"`
 }

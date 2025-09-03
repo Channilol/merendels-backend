@@ -104,9 +104,9 @@ func (r *RequestRepository) GetByID(id int) (*models.Request, error) {
 
 // GetByUserID recupera tutte le richieste di un utente specifico
 func (r *RequestRepository) GetByUserID(userID, limit, offset int) ([]models.Request, error) {
-	query := `SELECT id, user_id, start_date, end_date, request_type, notes, created_at FROM requests WHERE user_id = $1 ORDER BY created_at DESC  LIMIT $2 OFFSET $3`
+	query := `SELECT id, user_id, start_date, end_date, request_type, notes, created_at FROM requests WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
 	
-	rows,err := config.DB.Query(query,limit,offset)
+	rows,err := config.DB.Query(query,userID,limit,offset)
 	if err != nil {
 		return nil, err
 	}

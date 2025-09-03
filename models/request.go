@@ -21,7 +21,7 @@ type Request struct {
 // Request front-end -> back-end
 // NO ID & ModifiedAt => generated from the database by defaulta
 type CreateRequest struct {
-	UserID int  `json:"user_id" binding:"required"`
+	UserID int  `json:"user_id"`
 	StartDate time.Time  `json:"start_date" binding:"required"`
 	EndDate time.Time  `json:"end_date" binding:"required"`
 	RequestType RequestType  `json:"request_type" binding:"required"`
