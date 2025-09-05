@@ -170,6 +170,27 @@ func (s *RequestService) GetUserRequests(userID, limit, offset int) ([]models.Re
 	return requests, nil
 }
 
+// GetUserRequestsWithStatus recupera tutte le richieste di un utente con status
+func (s *RequestService) GetUserRequestsWithStatus(userID, limit, offset int) ([]models.RequestWithStatus, error) {
+	if userID <= 0 {
+		return nil, errors.New("ID utente non valido")
+	}
+
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	requests, err := s.requestRepository.GetByUserIDWithStatus(userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("errore nel recupero delle richieste utente con status: %w", err)
+	}
+
+	return requests, nil
+}
+
 // GetRequestsByDateRange recupera richieste in un range di date
 func (s *RequestService) GetRequestsByDateRange(startDate, endDate time.Time) ([]models.Request, error) {
 	if startDate.After(endDate) {

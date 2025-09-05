@@ -136,6 +136,69 @@ func (r *RequestRepository) GetByUserID(userID, limit, offset int) ([]models.Req
 	return requests, nil
 }
 
+// GetByUserIDWithStatus recupera richieste di un utente con status e approval_id
+func (r *RequestRepository) GetByUserIDWithStatus(userID, limit, offset int) ([]models.RequestWithStatus, error) {
+	query := `
+		SELECT 
+			r.id, r.user_id, r.start_date, r.end_date, r.request_type, r.notes, r.created_at,
+			a.status,                    -- ← RIMOSSO COALESCE, può essere NULL
+			a.id as approval_id
+		FROM requests r
+		LEFT JOIN approvals a ON r.id = a.request_id
+		WHERE r.user_id = $1 
+		ORDER BY r.created_at DESC 
+		LIMIT $2 OFFSET $3`
+	
+	rows, err := config.DB.Query(query, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var requests []models.RequestWithStatus
+
+	for rows.Next() {
+		var req models.RequestWithStatus
+		var status sql.NullString
+		var approvalID sql.NullInt64
+
+		err := rows.Scan(
+			&req.ID,
+			&req.UserID,
+			&req.StartDate,
+			&req.EndDate,
+			&req.RequestType,
+			&req.Notes,
+			&req.CreatedAt,
+			&status,
+			&approvalID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Logica per status nel codice Go
+		if status.Valid {
+			req.Status = status.String  // APPROVED/REJECTED/REVOKED
+		} else {
+			req.Status = "PENDING"
+		}
+
+		if approvalID.Valid {
+			approvalInt := int(approvalID.Int64)
+			req.ApprovalID = &approvalInt
+		}
+
+		requests = append(requests, req)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}
+
 // GetByDateRange recupera richieste in un range di date specifico
 func (r *RequestRepository) GetByDateRange(startDate, endDate time.Time) ([]models.Request, error) {
 	query := `SELECT id, user_id, start_date, end_date, request_type, notes, created_at FROM requests WHERE (start_date <= $2 AND end_date >= $1) ORDER BY start_date ASC`

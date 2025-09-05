@@ -27,3 +27,16 @@ type CreateRequest struct {
 	RequestType RequestType  `json:"request_type" binding:"required"`
 	Notes *string  `json:"notes"`
 }
+
+// RequestWithStatus per response API con status e approval_id
+type RequestWithStatus struct {
+	ID          int         `json:"id"`
+	UserID      int         `json:"user_id"`
+	StartDate   time.Time   `json:"start_date"`
+	EndDate     time.Time   `json:"end_date"`
+	RequestType RequestType `json:"request_type"`
+	Notes       *string     `json:"notes"`
+	CreatedAt   time.Time   `json:"created_at"`
+	Status      string      `json:"status"`       // PENDING, APPROVED, REJECTED, REVOKED
+	ApprovalID  *int        `json:"approval_id"`  // null se PENDING
+}

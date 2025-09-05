@@ -182,7 +182,7 @@ func (h *RequestHandler) GetRequestByID(c *gin.Context) {
 	})
 }
 
-// GetMyRequests gestisce GET /api/requests/me
+// GetMyRequests gestisce GET /api/requests/me (VERSIONE AGGIORNATA)
 func (h *RequestHandler) GetMyRequests(c *gin.Context) {
 	// Estrae user_id dal JWT token
 	userID, exists := middleware.GetUserIDFromContext(c)
@@ -207,8 +207,8 @@ func (h *RequestHandler) GetMyRequests(c *gin.Context) {
 		offset = 0
 	}
 
-	// Chiama il service
-	requests, err := h.requestService.GetUserRequests(userID, limit, offset)
+	// Chiama il service AGGIORNATO
+	requests, err := h.requestService.GetUserRequestsWithStatus(userID, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to fetch your requests",
