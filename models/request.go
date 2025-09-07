@@ -39,4 +39,5 @@ type RequestWithStatus struct {
 	CreatedAt   time.Time   `json:"created_at"`
 	Status      string      `json:"status"`       // PENDING, APPROVED, REJECTED, REVOKED
 	ApprovalID  *int        `json:"approval_id"`  // null se PENDING
+	ApproverName *string     `json:"approver_name"`
 }

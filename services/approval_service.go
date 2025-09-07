@@ -82,7 +82,6 @@ func (s *ApprovalService) CreateApproval(approverID int, request *models.CreateA
 		approverID, request.RequestID, request.Status)
 
 	// TODO: Implementare notifiche all'utente della richiesta
-	// s.sendApprovalNotification(existingRequest.UserID, createdApproval)
 
 	return createdApproval, nil
 }

@@ -20,7 +20,7 @@ func (r *ApprovalRepository) Create(approval *models.Approval) (*models.Approval
 	query := `INSERT INTO approvals (request_id, approver_id, status, comments) VALUES ($1, $2, $3, $4) 
 		RETURNING id, approved_at`
 
-	err := config.DB.QueryRow(query, approval.RequestID, approval.ApproverID, approval.Status, approval.Comments, approval.ApprovedAt).Scan(&approval.ID, &approval.ApprovedAt)
+	err := config.DB.QueryRow(query, approval.RequestID, approval.ApproverID, approval.Status, approval.Comments).Scan(&approval.ID, &approval.ApprovedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("errore nella creazione dell'approvazione: %w", err)
