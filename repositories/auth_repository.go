@@ -64,6 +64,31 @@ func (r *AuthRepository) GetUserForLogin(email string) (*LoginData, error) {
 	return &loginData, nil
 }
 
+// GetUserProfile recupera i dati del profilo utente per ID
+func (r *AuthRepository) GetUserProfile(userID int) (*models.User, error) {
+	query := `
+		SELECT u.id, u.name, u.email, u.role_id, u.manager_id
+		FROM users u 
+		WHERE u.id = $1`
+
+	var user models.User
+	err := config.DB.QueryRow(query, userID).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.RoleID,
+		&user.ManagerID,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Utente non trovato
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // CreateUserWithCredentials crea un nuovo utente + credenziali in una transazione
 func (r *AuthRepository) CreateUserWithCredentials(user *models.User, passwordHash, salt string) error {
 	// Inizio transazione per consistenza

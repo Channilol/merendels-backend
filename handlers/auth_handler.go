@@ -193,8 +193,17 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 }
 
 // GetProfile gestisce GET /api/auth/profile (Protetto da JWT)
-func (h *AuthHandler) GetProfile(c*gin.Context) {
-	// Estrae i dati dal JWT Token
+func (h *AuthHandler) GetProfile(c *gin.Context) {
+	// Estrae user_id dal JWT Token
+	userID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+		})
+		return
+	}
+
+	// Estrae claims per dati già disponibili nel token
 	claims, exists := middleware.GetUserClaimsFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -203,11 +212,23 @@ func (h *AuthHandler) GetProfile(c*gin.Context) {
 		return
 	}
 
-	// Costruisce il profilo utente
+	// Recupera il profilo completo dal database (incluso il nome)
+	user, err := h.authService.GetUserProfile(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve profile",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Costruisce il profilo completo
 	profile := gin.H{
-		"user_id":         claims.UserID,
-		"email":           claims.Email,
-		"role_id":         claims.RoleID,
+		"user_id":         user.ID,
+		"name":            user.Name,         // ← NUOVO CAMPO
+		"email":           user.Email,
+		"role_id":         user.RoleID,
+		"manager_id":      user.ManagerID,   // ← BONUS ANCHE QUESTO
 		"hierarchy_level": claims.HierarchyLevel,
 	}
 

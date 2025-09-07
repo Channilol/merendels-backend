@@ -20,6 +20,8 @@ func SetupApprovalRoutes(router *gin.RouterGroup) {
 		
 		// Rotte specifiche PRIMA dei parametri dinamici
 		approvals.GET("/me", handler.GetMyApprovals)                // GET /api/approvals/me - Le mie approvazioni (come approver)
+
+		approvals.GET("/request/:request_id", handler.GetApprovalsByRequestID) // GET /api/approvals/request/:request_id
 		
 		// OPERAZIONI AMMINISTRATIVE AVANZATE - Solo hierarchy_level <= 1
 		approvals.GET("/statistics", 
@@ -36,6 +38,7 @@ func SetupApprovalRoutes(router *gin.RouterGroup) {
 		
 		// ROTTE CON PARAMETRI DINAMICI - Alla fine per evitare conflitti
 		approvals.GET("/:id", handler.GetApprovalByID)              // GET /api/approvals/:id - Singola approvazione per ID
+		
 		
 		// OPERAZIONI DI APPROVAZIONE - Solo hierarchy_level <= 1 (Responsabile/Capo)
 		// Solo manager e responsabili possono creare, modificare ed eliminare approvazioni

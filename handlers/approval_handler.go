@@ -169,7 +169,7 @@ func (h *ApprovalHandler) GetApprovalByID(c *gin.Context) {
 	})
 }
 
-// GetApprovalsByRequestID gestisce GET /api/requests/:request_id/approvals
+// GetApprovalsByRequestID gestisce GET /api/approvals/request/:request_id
 func (h *ApprovalHandler) GetApprovalsByRequestID(c *gin.Context) {
 	// Estrae request_id dal parametro URL
 	requestIDParam := c.Param("request_id")
@@ -199,7 +199,7 @@ func (h *ApprovalHandler) GetApprovalsByRequestID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Approvals for request fetched successfully",
+		"message": "Approvals fetched successfully",
 		"data": approvals,
 		"count": len(approvals),
 		"request_id": requestID,

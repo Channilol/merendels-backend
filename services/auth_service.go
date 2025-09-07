@@ -94,6 +94,24 @@ func (s *AuthService) Login(request *models.LoginRequest) (*models.LoginResponse
 	return response, nil
 }
 
+// GetUserProfile recupera il profilo completo dell'utente
+func (s *AuthService) GetUserProfile(userID int) (*models.User, error) {
+	if userID <= 0 {
+		return nil, errors.New("ID utente non valido")
+	}
+
+	user, err := s.authRepository.GetUserProfile(userID)
+	if err != nil {
+		return nil, fmt.Errorf("errore nel recupero del profilo: %w", err)
+	}
+
+	if user == nil {
+		return nil, errors.New("utente non trovato")
+	}
+
+	return user, nil
+}
+
 // Register crea un nuovo utente con credenziali hashate
 func (s *AuthService) Register(request *models.CreateAuthCredentialRequest, userDetails *models.CreateUserRequest) (*models.LoginResponse, error) {
 	// Validazioni
