@@ -28,6 +28,9 @@ func SetupTimbratureRoutes(router *gin.RouterGroup) {
 		timbrature.GET("", 
 			middleware.RequireHierarchyLevel(1), 
 			handler.GetAllTimbrature)  // GET /api/timbrature - Tutte le timbrature
+		timbrature.GET("/employees-status", 
+			middleware.RequireHierarchyLevel(1), 
+			handler.GetEmployeesStatus) // GET /api/timbrature/employees-status
 			
 		timbrature.DELETE("/:id", 
 			middleware.RequireHierarchyLevel(1), 

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"merendels-backend/config"
 	"merendels-backend/middleware"
 	"merendels-backend/models"
 	"merendels-backend/services"
@@ -309,6 +310,52 @@ func (h *TimbratureHandler) GetAllTimbrature(c *gin.Context) {
 		},
 		"accessed_by": adminEmail,
 	})
+}
+
+func (h *TimbratureHandler) GetEmployeesStatus(c *gin.Context) {
+	//TODO: da spostare query nella repository
+	query := `SELECT id, name, email, role_id, manager_id FROM users ORDER BY name`
+	rows, err := config.DB.Query(query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+	defer rows.Close()
+
+	var result []gin.H
+	today := time.Now().Format("2006-01-02")
+
+	for rows.Next() {
+		var user models.User
+		err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.RoleID, &user.ManagerID)
+		if err != nil {
+			continue
+		}
+
+		// Prendo l'ultima timbratura dell'utente oggi
+		lastTimbrature, _ := h.service.GetLastTimbrature(user.ID)
+		
+		isWorking := false
+		workMode := "unknown"
+		
+		if lastTimbrature != nil {
+			// Controllo se è di oggi
+			lastDate := lastTimbrature.Timestamp.Format("2006-01-02")
+			if lastDate == today {
+				isWorking = lastTimbrature.ActionType == models.ActionEnter
+				workMode = string(lastTimbrature.Location) // "UFFICIO" o "SMART"
+			}
+		}
+
+		result = append(result, gin.H{
+			"id": user.ID,
+			"name": user.Name,
+			"is_working": isWorking,
+			"work_mode": workMode,
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 // DeleteTimbratura gestisce DELETE /api/timbrature/:id (solo per admin)
